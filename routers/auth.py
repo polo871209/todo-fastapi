@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 
 import uvicorn
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, APIRouter
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from jose import jwt, JWTError
 from passlib.context import CryptContext
@@ -15,7 +15,11 @@ from database.database import engine, SessionLocal
 SECRET_KEY = "j$Di!zrj*FBhl2Nv"
 ALGORITHM = "HS256"
 
-app = FastAPI()
+router = APIRouter(
+    prefix='/auth',
+    tags=["auth"],
+    responses={401: {"user": "Not authorized"}}
+)
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -85,7 +89,7 @@ def create_access_token(username: str, user_id: int, expires_delta: Optional[tim
     return jwt.encode(encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
-@app.post("/create/user")
+@router.post("/create/user")
 async def create_user(user: CreateUser, db: Session = Depends(get_db)):
     create_user_model = models.Users()
     create_user_model.username = user.username
@@ -101,7 +105,7 @@ async def create_user(user: CreateUser, db: Session = Depends(get_db)):
     return http_respond(status.HTTP_201_CREATED)
 
 
-@app.post("/token")
+@router.post("/token")
 async def login_get_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = authenticate_user(form_data.username, form_data.password, db)
 
